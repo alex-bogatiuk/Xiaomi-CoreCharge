@@ -1,0 +1,40 @@
+.vs/
+
+# Compilation builds and outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Nested build folders
+**/[Dd]ebug/
+**/[Rr]elease/
+**/x64/
+**/x86/
+
+# MSVC temporary files
+*.aps
+*.user
+*.suo
+*.db
+*.opendb
+*.sdf
+*.ipch
+*.log
+*.tlog
+
+# AI Agent Workflows and Skills
+.agents/
+
+# Local application settings
+xiaomi_corecharge_config.ini
+
+# Linker incremental files
+*.iobj
+*.ipdb
+
+# Compiled binaries and release archives
+*.exe
+*.zip
+*.tar.gz
+*.7z

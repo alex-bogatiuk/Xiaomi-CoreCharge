@@ -1,0 +1,36 @@
+#include "resource.h"
+#include <windows.h>
+
+// Version info
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,1
+PRODUCTVERSION 1,0,0,1
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404B0"
+        BEGIN
+            VALUE "CompanyName", "Xiaomi"
+            VALUE "FileDescription", "Xiaomi CoreCharge"
+            VALUE "FileVersion", "1.0.0.1"
+            VALUE "InternalName", "xiaomi_corecharge"
+            VALUE "LegalCopyright", "Copyright (C) 2026"
+            VALUE "OriginalFilename", "xiaomi_corecharge.exe"
+            VALUE "ProductName", "Xiaomi CoreCharge"
+            VALUE "ProductVersion", "1.0.0.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+// Icon resources - IDI_MAIN_ICON as the main application icon
+IDI_MAIN_ICON           ICON "resources/main_icon.ico"
+IDI_TRAY_ICON           ICON    "resources/tray_icon.ico"
