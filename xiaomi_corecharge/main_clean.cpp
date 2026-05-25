@@ -559,14 +559,24 @@ void SetBatteryCare(bool enable, int level) {
     level = 0;
   if (level > 100)
     level = 100;
-  if (enable)
+
+  if (enable) {
+    // Read the current state of the care register
+    BYTE currentValue = ReadEC(EC_BATTERY_CARE_ADDR);
+
+    // 1. Temporarily disable battery care to reset the EC charging state machine
+    WriteEC(EC_BATTERY_CARE_ADDR, currentValue & 0xFE);
+
+    // 2. Write the new battery charge limit level
     WriteEC(EC_BATTERY_LEVEL_ADDR, (BYTE)level);
-  BYTE currentValue = ReadEC(EC_BATTERY_CARE_ADDR);
-  if (enable)
-    currentValue |= 0x01;
-  else
-    currentValue &= 0xFE;
-  WriteEC(EC_BATTERY_CARE_ADDR, currentValue);
+
+    // 3. Re-enable battery care to trigger EC level re-evaluation and resume charging
+    WriteEC(EC_BATTERY_CARE_ADDR, currentValue | 0x01);
+  } else {
+    // Disable battery care completely
+    BYTE currentValue = ReadEC(EC_BATTERY_CARE_ADDR);
+    WriteEC(EC_BATTERY_CARE_ADDR, currentValue & 0xFE);
+  }
 }
 
 void SetPerformanceMode(int mode) {
