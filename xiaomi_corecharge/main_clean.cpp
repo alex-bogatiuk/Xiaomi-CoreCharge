@@ -10,6 +10,8 @@
 #include <shlwapi.h>
 #include <string>
 #include <strsafe.h>
+#include <algorithm>
+#include <cwctype>
 
 
 #pragma comment(lib, "comctl32.lib")
@@ -169,6 +171,7 @@ const wchar_t *L_MINCLOSE_LABEL[] = {L"Сворачивать в трей при
                                      L"Minimize to tray on close",
                                      L"关闭时最小化到系统托盘"};
 const wchar_t *L_BACK_BTN[] = {L"Назад", L"Back", L"返回"};
+const wchar_t *L_DEMO_MODE[] = {L"Демо-режим", L"Demo Mode", L"演示模式"};
 
 const wchar_t *L_OSD_TEXTS[][3] = {
     {L"Эко режим", L"Eco Mode", L"省电模式"},
@@ -355,8 +358,11 @@ bool IsXiaomiHardware() {
     if (RegQueryValueExW(hKey, L"SystemManufacturer", nullptr, &dwType,
                          (LPBYTE)manufacturer, &dwSize) == ERROR_SUCCESS) {
       std::wstring mfg(manufacturer);
-      if (mfg.find(L"Xiaomi") != std::wstring::npos ||
-          mfg.find(L"TIMI") != std::wstring::npos) {
+      // Convert to lowercase for case-insensitive matching
+      std::transform(mfg.begin(), mfg.end(), mfg.begin(), ::towlower);
+      if (mfg.find(L"xiaomi") != std::wstring::npos ||
+          mfg.find(L"timi") != std::wstring::npos ||
+          mfg.find(L"tianmi") != std::wstring::npos) {
         isXiaomi = true;
       }
     }
@@ -1291,10 +1297,27 @@ void DrawBackground(HDC hdc, RECT *rect) {
   DrawTextW(hdc, L"Xiaomi CoreCharge", -1, &titleRc,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-  // Version text
+  // Version text and Demo mode badge
+  int verX = 230;
+  if (!g_isXiaomiHardware) {
+    // Draw Demo Mode badge (blue capsule) next to title
+    RECT badgeRc = {230, 16, 325, 34};
+    HBRUSH hBadgeBrush = CreateSolidBrush(RGB(59, 130, 246));
+    HPEN hBadgePen = CreatePen(PS_SOLID, 1, RGB(59, 130, 246));
+    DrawRoundedRect(hdc, badgeRc.left, badgeRc.top, badgeRc.right - badgeRc.left, badgeRc.bottom - badgeRc.top, 8, hBadgeBrush, hBadgePen);
+    DeleteObject(hBadgeBrush);
+    DeleteObject(hBadgePen);
+
+    SelectObject(hdc, g_hFontSmall);
+    SetTextColor(hdc, RGB(255, 255, 255));
+    DrawTextW(hdc, L_DEMO_MODE[g_currentLanguage], -1, &badgeRc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+    verX = 335;
+  }
+
   SelectObject(hdc, g_hFontSmall);
   SetTextColor(hdc, RGB(140, 140, 140));
-  RECT verRc = {230, 18, 300, 36};
+  RECT verRc = {verX, 18, verX + 70, 36};
   DrawTextW(hdc, L"v1.0", -1, &verRc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
   // ========== SETTINGS CARDS (FULL OVERLAY IF ACTIVE) ==========
