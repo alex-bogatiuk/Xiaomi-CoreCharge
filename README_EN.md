@@ -9,6 +9,8 @@
 
 The utility interface uses a dark theme with GDI+ vector graphics (Anti-Aliasing) for smoothed controls.
 
+![Application Interface](gui_shot.png)
+
 ---
 
 ## Features
