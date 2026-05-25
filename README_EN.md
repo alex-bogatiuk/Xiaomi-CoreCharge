@@ -73,6 +73,7 @@ The compiled executable is saved at: `x64\Release\xiaomi_corecharge.exe`.
 ## Notes
 * **Administrator Privileges**: The `WinRing0` driver requires elevated permissions to access hardware I/O ports. Run the application as administrator.
 * **Compatibility**: The utility works on devices supporting EC addresses `0x68` (performance) and `0xA4`/`0xA7` (battery). Emulated demonstration mode is active on unsupported hardware.
+* **Compatibility Verification**: You can verify your laptop model's compatibility using the [Guide to Verifying EC Register Compatibility via RWeverything](EC_COMPATIBILITY_EN.md).
 
 ---
 
