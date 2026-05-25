@@ -641,8 +641,10 @@ void SetAutostart(bool enable) {
     if (enable) {
       wchar_t exePath[MAX_PATH];
       GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-      RegSetValueExW(hKey, L"XiaomiCoreCharge", 0, REG_SZ, (BYTE *)exePath,
-                     (DWORD)(wcslen(exePath) + 1) * sizeof(wchar_t));
+      wchar_t cmdLine[MAX_PATH + 32];
+      swprintf_s(cmdLine, L"\"%s\" --minimized", exePath);
+      RegSetValueExW(hKey, L"XiaomiCoreCharge", 0, REG_SZ, (BYTE *)cmdLine,
+                     (DWORD)(wcslen(cmdLine) + 1) * sizeof(wchar_t));
     } else {
       RegDeleteValueW(hKey, L"XiaomiCoreCharge");
     }
@@ -2403,7 +2405,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   const int windowWidth = 810;
   const int windowHeight = 440;
   g_hWnd = CreateWindowExW(
-      0, CLASS_NAME, WINDOW_TITLE, WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN,
+      0, CLASS_NAME, WINDOW_TITLE, WS_POPUP | WS_CLIPCHILDREN,
       (GetSystemMetrics(SM_CXSCREEN) - windowWidth) / 2,
       (GetSystemMetrics(SM_CYSCREEN) - windowHeight) / 2, windowWidth,
       windowHeight, nullptr, nullptr, hInstance, nullptr);
@@ -2414,7 +2416,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     return 0;
   }
 
-  ShowWindow(g_hWnd, nCmdShow);
+  // Check command line arguments for starting minimized
+  bool startMinimized = (wcsstr(lpCmdLine, L"--minimized") != nullptr ||
+                         wcsstr(lpCmdLine, L"/min") != nullptr);
+
+  if (startMinimized) {
+    g_isMinimized = true;
+    ShowWindow(g_hWnd, SW_HIDE);
+  } else {
+    ShowWindow(g_hWnd, nCmdShow);
+  }
   UpdateWindow(g_hWnd);
 
   MSG msg = {};
