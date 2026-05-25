@@ -2302,6 +2302,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     LPWSTR lpCmdLine, int nCmdShow) {
+  // Single Instance Protection
+  HANDLE hMutex = CreateMutexW(nullptr, TRUE, L"Global\\XiaomiCoreChargeMutex");
+  if (hMutex == nullptr || GetLastError() == ERROR_ALREADY_EXISTS) {
+    if (hMutex) CloseHandle(hMutex);
+    HWND hExistingWnd = FindWindowW(CLASS_NAME, nullptr);
+    if (hExistingWnd) {
+      ShowWindow(hExistingWnd, SW_SHOW);
+      ShowWindow(hExistingWnd, SW_RESTORE);
+      SetForegroundWindow(hExistingWnd);
+      BringWindowToTop(hExistingWnd);
+    }
+    return 0;
+  }
+
   g_hInstance = hInstance;
 
   CoInitializeEx(NULL, COINIT_MULTITHREADED);
@@ -2438,6 +2452,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   Gdiplus::GdiplusShutdown(gdiplusToken);
 
   CoUninitialize();
+
+  if (hMutex) {
+    CloseHandle(hMutex);
+  }
 
   return (int)msg.wParam;
 }
