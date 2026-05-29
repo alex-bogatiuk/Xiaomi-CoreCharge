@@ -633,38 +633,61 @@ void LoadConfig() {
   }
 }
 
+bool RunCommandHidden(const wchar_t* cmdLine, DWORD& exitCode) {
+  STARTUPINFOW si = { sizeof(si) };
+  PROCESS_INFORMATION pi = { 0 };
+  si.dwFlags = STARTF_USESHOWWINDOW;
+  si.wShowWindow = SW_HIDE;
+
+  wchar_t cmdBuf[1024];
+  wcscpy_s(cmdBuf, cmdLine);
+
+  if (CreateProcessW(nullptr, cmdBuf, nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return true;
+  }
+  return false;
+}
+
 void SetAutostart(bool enable) {
+  // Remove legacy registry entry if exists
   HKEY hKey;
   if (RegOpenKeyExW(HKEY_CURRENT_USER,
                     L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
                     KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
-    if (enable) {
-      wchar_t exePath[MAX_PATH];
-      GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-      wchar_t cmdLine[MAX_PATH + 32];
-      swprintf_s(cmdLine, L"\"%s\" --minimized", exePath);
-      RegSetValueExW(hKey, L"XiaomiCoreCharge", 0, REG_SZ, (BYTE *)cmdLine,
-                     (DWORD)(wcslen(cmdLine) + 1) * sizeof(wchar_t));
-    } else {
-      RegDeleteValueW(hKey, L"XiaomiCoreCharge");
-    }
+    RegDeleteValueW(hKey, L"XiaomiCoreCharge");
     RegCloseKey(hKey);
+  }
+
+  wchar_t cmdLine[MAX_PATH + 256];
+  DWORD exitCode;
+  if (enable) {
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+    // Create the task
+    swprintf_s(cmdLine, L"schtasks /create /tn \"XiaomiCoreCharge\" /tr \"\\\"%s\\\" --minimized\" /sc onlogon /rl highest /f", exePath);
+    RunCommandHidden(cmdLine, exitCode);
+
+    // Disable battery restrictions and add a 5-second startup delay for the LogonTrigger to ensure SCM is fully ready
+    wchar_t psCmd[MAX_PATH + 512];
+    swprintf_s(psCmd, L"powershell -Command \"$t = Get-ScheduledTask -TaskName 'XiaomiCoreCharge'; $t.Settings.DisallowStartIfOnBatteries = $false; $t.Settings.StopIfGoingOnBatteries = $false; $t.Triggers[0].Delay = 'PT5S'; Set-ScheduledTask -InputObject $t\"");
+    RunCommandHidden(psCmd, exitCode);
+  } else {
+    swprintf_s(cmdLine, L"schtasks /delete /tn \"XiaomiCoreCharge\" /f");
+    RunCommandHidden(cmdLine, exitCode);
   }
 }
 
 bool GetAutostart() {
-  HKEY hKey;
-  bool enabled = false;
-  if (RegOpenKeyExW(HKEY_CURRENT_USER,
-                    L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
-                    KEY_READ, &hKey) == ERROR_SUCCESS) {
-    if (RegQueryValueExW(hKey, L"XiaomiCoreCharge", nullptr, nullptr, nullptr,
-                         nullptr) == ERROR_SUCCESS) {
-      enabled = true;
-    }
-    RegCloseKey(hKey);
+  wchar_t cmdLine[] = L"schtasks /query /tn \"XiaomiCoreCharge\"";
+  DWORD exitCode = 1;
+  if (RunCommandHidden(cmdLine, exitCode)) {
+    return exitCode == 0;
   }
-  return enabled;
+  return false;
 }
 
 void ToggleSettingsUI(bool show) {
