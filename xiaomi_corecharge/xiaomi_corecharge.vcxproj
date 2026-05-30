@@ -147,14 +147,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main_clean.cpp" />
+    <ClCompile Include="Constants.cpp" />
+    <ClCompile Include="Globals.cpp" />
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="ConfigManager.cpp" />
+    <ClCompile Include="ECController.cpp" />
+    <ClCompile Include="TaskScheduler.cpp" />
+    <ClCompile Include="OSDController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="resources\background.png" />
     <Image Include="resources\main_icon.ico" />
     <Image Include="resources\tray_icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="Globals.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="ConfigManager.h" />
+    <ClInclude Include="ECController.h" />
+    <ClInclude Include="TaskScheduler.h" />
+    <ClInclude Include="OSDController.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="xiaomi_corecharge.rc" />
