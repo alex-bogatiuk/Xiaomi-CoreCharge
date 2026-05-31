@@ -456,7 +456,23 @@ void DrawBackground(HDC hdc, RECT *rect) {
   // ========== SETTINGS CARDS (FULL OVERLAY IF ACTIVE) ==========
   if (g_showSettings) {
     SelectObject(hdc, g_hCardBrush);
-    RoundRect(hdc, 32, 115, 760, 380, 12, 12);
+    {
+      Gdiplus::Graphics gfx(hdc);
+      gfx.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+      LOGBRUSH lbCard;
+      GetObject(g_hCardBrush, sizeof(LOGBRUSH), &lbCard);
+      Gdiplus::SolidBrush cardBr(Gdiplus::Color(255, GetRValue(lbCard.lbColor),
+                                                GetGValue(lbCard.lbColor),
+                                                GetBValue(lbCard.lbColor)));
+      Gdiplus::GraphicsPath cardPath;
+      int cd = 12;
+      cardPath.AddArc(32, 115, cd, cd, 180, 90);
+      cardPath.AddArc(760 - cd, 115, cd, cd, 270, 90);
+      cardPath.AddArc(760 - cd, 380 - cd, cd, cd, 0, 90);
+      cardPath.AddArc(32, 380 - cd, cd, cd, 90, 90);
+      cardPath.CloseFigure();
+      gfx.FillPath(&cardBr, &cardPath);
+    }
 
     // Settings Title
     SetTextColor(hdc, RGB(255, 255, 255));
@@ -491,7 +507,23 @@ void DrawBackground(HDC hdc, RECT *rect) {
   HBRUSH hOldBrush2 = (HBRUSH)SelectObject(
       hdc, hBatteryCardBrush); // Save old brush for safe deletion
   SelectObject(hdc, GetStockObject(NULL_PEN));
-  RoundRect(hdc, 32, 115, 350, 205, 16, 16);
+  {
+    Gdiplus::Graphics gfx(hdc);
+    gfx.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    LOGBRUSH lbBat;
+    GetObject(hBatteryCardBrush, sizeof(LOGBRUSH), &lbBat);
+    Gdiplus::SolidBrush batBr(Gdiplus::Color(255, GetRValue(lbBat.lbColor),
+                                             GetGValue(lbBat.lbColor),
+                                             GetBValue(lbBat.lbColor)));
+    Gdiplus::GraphicsPath batPath;
+    int bd = 16;
+    batPath.AddArc(32, 115, bd, bd, 180, 90);
+    batPath.AddArc(350 - bd, 115, bd, bd, 270, 90);
+    batPath.AddArc(350 - bd, 205 - bd, bd, bd, 0, 90);
+    batPath.AddArc(32, 205 - bd, bd, bd, 90, 90);
+    batPath.CloseFigure();
+    gfx.FillPath(&batBr, &batPath);
+  }
 
   // Battery time remaining (large text)
   SetTextColor(hdc, RGB(255, 255, 255));
@@ -559,7 +591,23 @@ void DrawBackground(HDC hdc, RECT *rect) {
 
   // Card 2: Charge Maintenance (shifted up and now the primary settings card at
   // y=255 to y=380 for better spacing)
-  RoundRect(hdc, 32, 255, 760, 380, 12, 12);
+  {
+    Gdiplus::Graphics gfx(hdc);
+    gfx.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    LOGBRUSH lbCh;
+    GetObject(g_hCardBrush, sizeof(LOGBRUSH), &lbCh);
+    Gdiplus::SolidBrush chBr(Gdiplus::Color(255, GetRValue(lbCh.lbColor),
+                                            GetGValue(lbCh.lbColor),
+                                            GetBValue(lbCh.lbColor)));
+    Gdiplus::GraphicsPath chPath;
+    int chd = 12;
+    chPath.AddArc(32, 255, chd, chd, 180, 90);
+    chPath.AddArc(760 - chd, 255, chd, chd, 270, 90);
+    chPath.AddArc(760 - chd, 380 - chd, chd, chd, 0, 90);
+    chPath.AddArc(32, 380 - chd, chd, chd, 90, 90);
+    chPath.CloseFigure();
+    gfx.FillPath(&chBr, &chPath);
+  }
 
   // Card 2 content: Charge Maintenance
   SetTextColor(hdc, RGB(255, 255, 255));
@@ -962,16 +1010,40 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
             hBtnBrush = g_hBgBrush; // Inactive state: matches window background
         }
 
-        HBRUSH hOldBrush = (HBRUSH)SelectObject(hDC, hBtnBrush);
-        HPEN hOldPen = (HPEN)SelectObject(
-            hDC, isActive ? GetStockObject(NULL_PEN)
-                          : (!isEnabled
-                                 ? g_hBorderPen
-                                 : (isHovered ? g_hAccentPen : g_hBorderPen)));
+        {
+          Gdiplus::Graphics gfx(hDC);
+          gfx.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
 
-        RoundRect(hDC, rc.left, rc.top, rc.right, rc.bottom, 15, 15);
-        SelectObject(hDC, hOldBrush);
-        SelectObject(hDC, hOldPen);
+          LOGBRUSH lbPr;
+          GetObject(hBtnBrush, sizeof(LOGBRUSH), &lbPr);
+          Gdiplus::SolidBrush prBr(Gdiplus::Color(
+              255, GetRValue(lbPr.lbColor), GetGValue(lbPr.lbColor),
+              GetBValue(lbPr.lbColor)));
+
+          int pd = 15;
+          Gdiplus::GraphicsPath prPath;
+          prPath.AddArc(rc.left, rc.top, pd, pd, 180, 90);
+          prPath.AddArc(rc.right - pd - 1, rc.top, pd, pd, 270, 90);
+          prPath.AddArc(rc.right - pd - 1, rc.bottom - pd - 1, pd, pd, 0, 90);
+          prPath.AddArc(rc.left, rc.bottom - pd - 1, pd, pd, 90, 90);
+          prPath.CloseFigure();
+
+          gfx.FillPath(&prBr, &prPath);
+
+          if (!isActive) {
+            HPEN borderPen = !isEnabled
+                                 ? g_hBorderPen
+                                 : (isHovered ? g_hAccentPen : g_hBorderPen);
+            LOGPEN lpPr;
+            GetObject(borderPen, sizeof(LOGPEN), &lpPr);
+            Gdiplus::Pen gdiBPen(
+                Gdiplus::Color(255, GetRValue(lpPr.lopnColor),
+                               GetGValue(lpPr.lopnColor),
+                               GetBValue(lpPr.lopnColor)),
+                1.0f);
+            gfx.DrawPath(&gdiBPen, &prPath);
+          }
+        }
 
         // Draw text
         wchar_t text[16];
