@@ -365,26 +365,37 @@ void DrawRoundedRect(HDC hdc, int x, int y, int w, int h, int r, HBRUSH brush,
 void DrawToggle(HDC hdc, int x, int y, bool isOn, bool isHovered) {
   int w = 50, h = 26, r = 13;
 
-  // Track background
   HBRUSH trackBrush = isOn ? g_hAccentBrush : g_hToggleOffBrush;
   if (isHovered) {
     trackBrush = isOn ? g_hAccentHoverBrush : g_hHoverBrush;
   }
 
-  HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, trackBrush);
-  HPEN oldPen = (HPEN)SelectObject(hdc, GetStockObject(NULL_PEN));
-  RoundRect(hdc, x, y, x + w, y + h, r * 2, r * 2);
+  Gdiplus::Graphics graphics(hdc);
+  graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+
+  LOGBRUSH lb;
+  GetObject(trackBrush, sizeof(LOGBRUSH), &lb);
+  Gdiplus::SolidBrush bgBrush(Gdiplus::Color(255, GetRValue(lb.lbColor),
+                                             GetGValue(lb.lbColor),
+                                             GetBValue(lb.lbColor)));
+
+  int d = r * 2;
+  Gdiplus::GraphicsPath path;
+  path.AddArc(x, y, d, d, 180, 90);
+  path.AddArc(x + w - d, y, d, d, 270, 90);
+  path.AddArc(x + w - d, y + h - d, d, d, 0, 90);
+  path.AddArc(x, y + h - d, d, d, 90, 90);
+  path.CloseFigure();
+
+  graphics.FillPath(&bgBrush, &path);
 
   // Thumb (circle)
   int thumbX = isOn ? x + w - h + 3 : x + 3;
   int thumbY = y + 3;
   int thumbSize = h - 6;
 
-  SelectObject(hdc, GetStockObject(WHITE_BRUSH));
-  Ellipse(hdc, thumbX, thumbY, thumbX + thumbSize, thumbY + thumbSize);
-
-  SelectObject(hdc, oldBrush);
-  SelectObject(hdc, oldPen);
+  Gdiplus::SolidBrush thumbBrush(Gdiplus::Color(255, 255, 255, 255));
+  graphics.FillEllipse(&thumbBrush, thumbX, thumbY, thumbSize, thumbSize);
 }
 
 void DrawBackground(HDC hdc, RECT *rect) {
@@ -662,16 +673,36 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
             hBtnBrush = g_hCardBrush;
         }
 
-        HBRUSH hOldBrush = (HBRUSH)SelectObject(hDC, hBtnBrush);
-        HPEN hOldPen = (HPEN)SelectObject(
-            hDC, isActive ? GetStockObject(NULL_PEN) : hBorderPenToUse);
-        RoundRect(hDC, rc.left, rc.top, rc.right, rc.bottom, 16, 16);
-        SelectObject(hDC, hOldBrush);
-        SelectObject(hDC, hOldPen);
-
-        // Icon rendering with GDI+ antialiasing
+        // Draw smooth rounded background using GDI+
         Gdiplus::Graphics graphics(hDC);
         graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+
+        LOGBRUSH lbBg;
+        GetObject(hBtnBrush, sizeof(LOGBRUSH), &lbBg);
+        Gdiplus::SolidBrush gdiBgBrush(Gdiplus::Color(
+            255, GetRValue(lbBg.lbColor), GetGValue(lbBg.lbColor),
+            GetBValue(lbBg.lbColor)));
+
+        int d = 16;
+        Gdiplus::GraphicsPath path;
+        path.AddArc(rc.left, rc.top, d, d, 180, 90);
+        path.AddArc(rc.right - d - 1, rc.top, d, d, 270, 90);
+        path.AddArc(rc.right - d - 1, rc.bottom - d - 1, d, d, 0, 90);
+        path.AddArc(rc.left, rc.bottom - d - 1, d, d, 90, 90);
+        path.CloseFigure();
+
+        graphics.FillPath(&gdiBgBrush, &path);
+
+        if (!isActive) {
+          LOGPEN lpPen;
+          GetObject(hBorderPenToUse, sizeof(LOGPEN), &lpPen);
+          Gdiplus::Pen gdiBorderPen(
+              Gdiplus::Color(255, GetRValue(lpPen.lopnColor),
+                             GetGValue(lpPen.lopnColor),
+                             GetBValue(lpPen.lopnColor)),
+              1.0f);
+          graphics.DrawPath(&gdiBorderPen, &path);
+        }
 
         int cx = rc.left + (rc.right - rc.left) / 2;
         int cy = rc.top + 28;
